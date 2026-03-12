@@ -1,0 +1,61 @@
+name: Build & Deploy to EC2
+
+on:
+  push:
+    branches: [main]
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REPO: project2_node_js_api
+  CODEDEPLOY_APP: project2_node_js_app
+  DEPLOY_GROUP: nodejs-project2
+
+jobs:
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run Tests
+        run: npm test
+
+  build-and-deploy:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push Docker Image
+        run: |
+          IMAGE=${{ steps.ecr.outputs.registry }}/$ECR_REPO:${{ github.sha }}
+          docker build -t $IMAGE -t ${{ steps.ecr.outputs.registry }}/$ECR_REPO:latest .
+          docker push $IMAGE
+          docker push ${{ steps.ecr.outputs.registry }}/$ECR_REPO:latest
+
+      - name: Trigger CodeDeploy
+        run: |
+          aws deploy create-deployment \
+          --application-name $CODEDEPLOY_APP \
+          --deployment-group-name $DEPLOY_GROUP \
+          --github-location repository=${{ github.repository }},commitId=${{ github.sha }}
