@@ -5,7 +5,7 @@ on:
     branches: [master]
 
 env:
-  AWS_REGION: ap-south-1
+  AWS_REGION: ap-south-2
   ECR_REPO: project2_node_js_api
   CODEDEPLOY_APP: project2_node_js_app
   DEPLOY_GROUP: nodejs-project2
