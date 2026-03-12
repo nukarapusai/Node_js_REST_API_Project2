@@ -53,9 +53,17 @@ jobs:
           docker push $IMAGE
           docker push ${{ steps.ecr.outputs.registry }}/$ECR_REPO:latest
 
+      - name: Zip application
+        run: |
+          zip -r deployment.zip .
+
+      - name: Upload to S3
+        run: |
+          aws s3 cp deployment.zip s3://codedeploy-artifacts-project2/deployment.zip
+
       - name: Trigger CodeDeploy
         run: |
           aws deploy create-deployment \
-          --application-name $CODEDEPLOY_APP \
-          --deployment-group-name $DEPLOY_GROUP \
-          --github-location repository=${{ github.repository }},commitId=${{ github.sha }}
+            --application-name $CODEDEPLOY_APP \
+            --deployment-group-name $DEPLOY_GROUP \
+            --s3-location bucket=codedeploy-artifacts-project2,key=deployment.zip,bundleType=zip
