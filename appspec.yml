@@ -1,0 +1,15 @@
+version: 0.0
+os: linux
+
+hooks:
+  BeforeInstall:
+    - location: scripts/before_install.sh
+
+  AfterInstall:
+    - location: scripts/after_install.sh
+
+  ApplicationStart:
+    - location: scripts/application_start.sh
+
+  ValidateService:
+    - location: scripts/validate_service.sh
